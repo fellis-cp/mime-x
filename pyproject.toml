@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mime-x"
+version = "0.1.0"
+authors = [
+  { name="Flo", email="flo@example.com" },
+]
+description = "A professional Linux GUI for managing XDG MIME type associations."
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+]
+dependencies = [
+    "PySide6",
+]
+
+[project.gui-scripts]
+mime-x = "mime_x.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

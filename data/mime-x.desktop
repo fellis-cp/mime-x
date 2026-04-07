@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Mime-X
+Comment=Manage Linux File Associations
+Exec=/home/flo/Repo/mime-x/venv/bin/python3 /home/flo/Repo/mime-x/main.py
+Icon=preferences-desktop-default-applications
+Terminal=false
+Type=Application
+Categories=Settings;System;
+Keywords=mime;xdg;associations;defaults;
+StartupNotify=true
