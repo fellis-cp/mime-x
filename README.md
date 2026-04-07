@@ -1,4 +1,5 @@
-# 🚀 Mime-X
+# Mime-X
+<img width="1873" height="1014" alt="image" src="https://github.com/user-attachments/assets/869e0555-ae66-487f-9774-ce4e6fb6c76e" />
 
 **Mime-X** is a GUI application designed to simplify the management of XDG MIME type associations. Built with PySide6.
 
@@ -14,7 +15,7 @@
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/mime-x.git
+   https://github.com/fellis-cp/mime-x.git
    cd mime-x
    ```
 
