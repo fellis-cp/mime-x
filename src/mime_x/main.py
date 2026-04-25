@@ -11,8 +11,45 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QSize, QRect
 from PySide6.QtGui import QIcon, QColor, QFont, QPixmap, QPainter, QBrush, QPen
 
-import sys
-import os
+
+def get_app_icon(icon_name: str, size: int = 32) -> QIcon:
+    """Resolve an app icon from a theme name or an absolute file path.
+
+    Desktop files may specify either:
+      - A bare name  (e.g. "vlc", "google-chrome") → look up in the icon theme.
+      - An absolute path (e.g. "/opt/google/chrome/product_logo_48.png") → load directly.
+      - A path without extension (e.g. "/usr/share/icons/hicolor/48x48/apps/vlc") → try common formats.
+    """
+    if not icon_name:
+        return QIcon.fromTheme("application-x-executable")
+
+    # Absolute path with an extension that exists on disk
+    if os.path.isabs(icon_name):
+        if os.path.isfile(icon_name):
+            px = QPixmap(icon_name)
+            if not px.isNull():
+                return QIcon(px)
+        # Try appending common image extensions
+        for ext in (".png", ".svg", ".xpm", ".jpg"):
+            candidate = icon_name + ext
+            if os.path.isfile(candidate):
+                px = QPixmap(candidate)
+                if not px.isNull():
+                    return QIcon(px)
+
+    # Theme name lookup (also catches bare names like "vlc", "firefox")
+    icon = QIcon.fromTheme(icon_name)
+    if not icon.isNull():
+        return icon
+
+    # Some apps register their icon under the stem of their desktop-id
+    stem = os.path.splitext(icon_name)[0]
+    icon = QIcon.fromTheme(stem)
+    if not icon.isNull():
+        return icon
+
+    # Final fallback
+    return QIcon.fromTheme("application-x-executable")
 
 # Add current directory to path to support direct script execution
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -84,7 +121,7 @@ class AppItemWidget(QWidget):
 
         # Icon
         icon_label = QLabel()
-        icon = QIcon.fromTheme(app.icon, QIcon.fromTheme("application-x-executable"))
+        icon = get_app_icon(app.icon)
         icon_label.setPixmap(icon.pixmap(32, 32))
         layout.addWidget(icon_label, 0, Qt.AlignVCenter)
 
@@ -118,27 +155,46 @@ class AppItemWidget(QWidget):
             layout.addWidget(btn, 0, Qt.AlignVCenter)
 
 class EssentialCard(QFrame):
-    ICONS = {
-        "Web Browser": "applications-internet",
-        "PDF Reader": "application-pdf",
-        "Video Player": "multimedia-video-player",
-        "Music Player": "multimedia-audio-player",
-        "Image Viewer": "image-viewer",
-        "Text Editor": "text-editor",
-        "Terminals": "utilities-terminal"
+    # Reliable fallback icon names confirmed present in common icon themes.
+    # "multimedia-video-player", "multimedia-audio-player", "image-viewer", "text-editor"
+    # are absent in many themes, so we provide tested alternatives.
+    FALLBACK_ICONS = {
+        "Web Browser":   ["applications-internet", "web-browser", "internet-web-browser"],
+        "PDF Reader":    ["application-pdf", "evince", "okular", "acroread"],
+        "Video Player":  ["video-display", "video-x-generic", "applications-multimedia", "totem"],
+        "Music Player":  ["audio-headphones", "audio-x-generic", "rhythmbox", "applications-multimedia"],
+        "Image Viewer":  ["image-x-generic", "eog", "image-viewer", "gnome-image-viewer"],
+        "Text Editor":   ["text-x-generic", "accessories-text-editor", "gedit", "text-editor"],
+        "Terminals":     ["utilities-terminal", "terminal", "gnome-terminal"],
     }
-    
+
     def __init__(self, category: str, mimetypes: List[str], manager: MimeManager, on_change=None):
         super().__init__()
         self.setObjectName("EssentialCard")
         main_layout = QHBoxLayout(self)
         main_layout.setContentsMargins(20, 20, 20, 20)
         main_layout.setSpacing(20)
-        
-        # Icon
+
+        # Icon: prefer the real default app's icon, then fall back to category icons
         icon_label = QLabel()
-        icon_name = self.ICONS.get(category, "preferences-desktop-default-applications")
-        icon = QIcon.fromTheme(icon_name, QIcon.fromTheme("folder"))
+        icon = QIcon()
+
+        primary_mime = mimetypes[0]
+        default_id = manager.get_default_app_id(primary_mime)
+        if default_id:
+            default_app = manager.apps.get(default_id)
+            if default_app:
+                icon = get_app_icon(default_app.icon)
+
+        if icon.isNull():
+            for name in self.FALLBACK_ICONS.get(category, ["application-x-executable"]):
+                icon = QIcon.fromTheme(name)
+                if not icon.isNull():
+                    break
+
+        if icon.isNull():
+            icon = QIcon.fromTheme("application-x-executable")
+
         icon_label.setPixmap(icon.pixmap(48, 48))
         main_layout.addWidget(icon_label, 0, Qt.AlignVCenter)
         
@@ -437,9 +493,15 @@ class MainWindow(QMainWindow):
                 ch.setContentsMargins(15, 10, 15, 10)
                 ch.setSpacing(15)
                 
-                # Icon
+                # Icon — show the default app's icon in the audit panel
                 icon_label = QLabel()
-                icon = QIcon.fromTheme(o["mimetype"].replace("/", "-"), QIcon.fromTheme("text-x-generic"))
+                audit_app = self.manager.apps.get(o["app_id"])
+                if audit_app:
+                    icon = get_app_icon(audit_app.icon)
+                else:
+                    icon = QIcon.fromTheme(o["mimetype"].replace("/", "-"))
+                    if icon.isNull():
+                        icon = QIcon.fromTheme("text-x-generic")
                 icon_label.setPixmap(icon.pixmap(32, 32))
                 ch.addWidget(icon_label, 0, Qt.AlignVCenter)
                 
