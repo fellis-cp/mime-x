@@ -1,5 +1,6 @@
 # Mime-X
-<img width="1873" height="1014" alt="image" src="https://github.com/user-attachments/assets/869e0555-ae66-487f-9774-ce4e6fb6c76e" />
+<img width="2543" height="1365" alt="image" src="https://github.com/user-attachments/assets/32ec43b3-b9a6-4fa6-9ebe-c6e1c7fd4b93" />
+
 
 **Mime-X** is a GUI application designed to simplify the management of XDG MIME type associations. Built with PySide6.
 
